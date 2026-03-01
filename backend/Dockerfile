@@ -13,8 +13,9 @@ COPY . .
 
 # Set entrypoint script
 RUN sed -i 's/\r$//' /app/entrypoint.sh && \
-    chmod +x /app/entrypoint.sh
+    chmod +x /app/entrypoint.sh && \
+    mv /app/entrypoint.sh /entrypoint.sh
 
 EXPOSE 8000
 
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
