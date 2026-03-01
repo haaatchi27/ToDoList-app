@@ -54,12 +54,13 @@ class TaskViewSet(viewsets.ModelViewSet):
     """
 
     def get_queryset(self):
-        """Return only top-level tasks for list; all tasks for detail."""
+        """Return only top-level tasks for list; all tasks for detail, filtered by user."""
+        user = self.request.user
         if self.action == "list":
-            return Task.objects.filter(parent__isnull=True).order_by(
+            return Task.objects.filter(user=user, parent__isnull=True).order_by(
                 "order", "created_at"
             )
-        return Task.objects.all()
+        return Task.objects.filter(user=user)
 
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):
@@ -67,7 +68,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         return TaskSerializer
 
     def perform_create(self, serializer):
-        task = serializer.save()
+        task = serializer.save(user=self.request.user)
         # Propagate due_date to parent group
         if task.parent and task.parent.is_group:
             task.parent.propagate_due_date()

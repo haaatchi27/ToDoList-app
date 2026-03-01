@@ -48,9 +48,92 @@
   --space-2xl: 48px;
 
   /* Transition */
+  /* Transition */
   --transition-fast: 150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== Themes ===== */
+
+/* 1. Ocean Theme */
+.theme-ocean {
+  --bg-primary: #041a1a;
+  --bg-secondary: #0a2525;
+  --accent-primary: #06b6d4;
+  --accent-primary-hover: #22d3ee;
+  --accent-secondary: #0891b2;
+  --accent-gradient: linear-gradient(135deg, #06b6d4, #0891b2, #22d3ee);
+  --accent-glow: 0 0 20px rgba(6, 182, 212, 0.3);
+  --border-color: rgba(6, 182, 212, 0.15);
+  --border-glow: rgba(6, 182, 212, 0.3);
+}
+
+/* 2. Sunset Theme */
+.theme-sunset {
+  --bg-primary: #1a0a1a;
+  --bg-secondary: #250a25;
+  --accent-primary: #f43f5e;
+  --accent-primary-hover: #fb7185;
+  --accent-secondary: #fb923c;
+  --accent-gradient: linear-gradient(135deg, #f43f5e, #fb923c, #f472b6);
+  --accent-glow: 0 0 20px rgba(244, 63, 94, 0.3);
+  --border-color: rgba(244, 63, 94, 0.15);
+  --border-glow: rgba(244, 63, 94, 0.3);
+}
+
+/* 3. Forest Theme */
+.theme-forest {
+  --bg-primary: #0a1a0f;
+  --bg-secondary: #0a2514;
+  --accent-primary: #10b981;
+  --accent-primary-hover: #34d399;
+  --accent-secondary: #059669;
+  --accent-gradient: linear-gradient(135deg, #10b981, #059669, #34d399);
+  --accent-glow: 0 0 20px rgba(16, 185, 129, 0.3);
+  --border-color: rgba(16, 185, 129, 0.15);
+  --border-glow: rgba(16, 185, 129, 0.3);
+}
+
+.theme-switcher {
+  display: flex;
+  gap: var(--space-xs);
+  justify-content: center;
+  margin-top: var(--space-md);
+}
+
+.theme-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.theme-btn:hover {
+  transform: scale(1.2);
+}
+
+.theme-btn.active {
+  border-color: var(--text-primary);
+  transform: scale(1.1);
+}
+
+.theme-btn.indigo {
+  background: #6366f1;
+}
+
+.theme-btn.ocean {
+  background: #06b6d4;
+}
+
+.theme-btn.sunset {
+  background: #f43f5e;
+}
+
+.theme-btn.forest {
+  background: #10b981;
 }
 
 /* ===== Reset & Base ===== */

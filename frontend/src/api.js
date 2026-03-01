@@ -1,9 +1,15 @@
 const API_BASE = '/api';
 
 async function request(url, options = {}) {
+    const token = localStorage.getItem('access_token');
+    const headers = { 'Content-Type': 'application/json', ...options.headers };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${API_BASE}${url}`, {
-        headers: { 'Content-Type': 'application/json', ...options.headers },
         ...options,
+        headers,
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -14,6 +20,11 @@ async function request(url, options = {}) {
 }
 
 export const api = {
+    login: (username, password) =>
+        request('/token/', {
+            method: 'POST',
+            body: JSON.stringify({ username, password }),
+        }),
     register: (data) =>
         request('/register/', {
             method: 'POST',
