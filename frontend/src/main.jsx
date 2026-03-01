@@ -8,6 +8,8 @@ import './index.css'
 
 // Import and initialize mobile-drag-drop polyfill
 import { polyfill } from "mobile-drag-drop";
+// Import default styles for the polyfill
+import "mobile-drag-drop/default.css";
 
 polyfill({
     // drag and drop items on hold (150ms) to avoid conflict with scroll

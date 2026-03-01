@@ -746,8 +746,18 @@ body::before {
   -khtml-user-select: none;
   -webkit-user-select: none;
   user-select: none;
-  /* Required to prevent default touch behaviors like scrolling while dragging */
+}
+
+.drag-handle {
+  /* Prevent default touch actions ONLY on the handle to allow scrolling elsewhere */
   touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Visual feedback when holding the handle on mobile */
+.drag-handle:active {
+  transform: scale(1.2);
+  color: var(--accent-primary);
 }
 
 .task-item.dragging {
