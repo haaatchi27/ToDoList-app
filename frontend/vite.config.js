@@ -6,7 +6,7 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
-    allowedHosts: ['todolist.hatchi.mydns.jp'],
+    allowedHosts: ['todolist.mydns.jp'],
     proxy: {
       '/api': {
         target: 'http://backend:8000',
