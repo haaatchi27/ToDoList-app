@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from './api';
 
-export default function Register({ onBack }) {
+export default function Register() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
@@ -69,9 +70,9 @@ export default function Register({ onBack }) {
                 </form>
                 {message && <p className={`reg-message ${message.includes('失敗') ? 'error-text' : ''}`}>{message}</p>}
                 <div className="auth-switch">
-                    <button className="btn btn-link" onClick={onBack}>
+                    <Link to="/" className="btn btn-link">
                         ← タスク一覧に戻る
-                    </button>
+                    </Link>
                 </div>
             </div>
         </div>

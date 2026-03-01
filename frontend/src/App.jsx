@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { Routes, Route, Link } from 'react-router-dom';
 import { api } from './api';
 import TaskItem from './components/TaskItem';
 import Register from './Register';
@@ -7,9 +8,6 @@ export default function App() {
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-
-    // Navigation state
-    const [viewMode, setViewMode] = useState('tasks'); // 'tasks' or 'register'
 
     // Tab state
     const [activeTab, setActiveTab] = useState('task'); // 'task' or 'group'
@@ -127,97 +125,98 @@ export default function App() {
         }
     };
 
-    if (viewMode === 'register') {
-        return <Register onBack={() => setViewMode('tasks')} />;
-    }
-
     return (
-        <div className="app-container">
-            <header className="app-header">
-                <div className="header-top">
-                    <button className="btn btn-ghost btn-sm" onClick={() => setViewMode('register')}>
-                        ユーザー登録
-                    </button>
-                </div>
-                <h1 className="app-title">ToDoList</h1>
-                <p className="app-subtitle">階層型タスク管理</p>
-            </header>
+        <Routes>
+            <Route path="/signup" element={<Register />} />
+            <Route path="/" element={
+                <div className="app-container">
+                    <header className="app-header">
+                        <div className="header-top">
+                            <Link to="/signup" className="btn btn-ghost btn-sm">
+                                ユーザー登録
+                            </Link>
+                        </div>
+                        <h1 className="app-title">ToDoList</h1>
+                        <p className="app-subtitle">階層型タスク管理</p>
+                    </header>
 
-            {/* Tabbed Creation Form */}
-            <div className="glass-card task-form-container">
-                <div className="form-tabs">
-                    <button
-                        className={`tab-btn ${activeTab === 'task' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('task')}
-                    >
-                        タスク作成
-                    </button>
-                    <button
-                        className={`tab-btn ${activeTab === 'group' ? 'active' : ''}`}
-                        onClick={() => setActiveTab('group')}
-                    >
-                        グループ作成
-                    </button>
-                </div>
-                <div className="form-content">
-                    <div className="form-row">
-                        <input
-                            className="form-input"
-                            placeholder={activeTab === 'task' ? "新しいタスクを追加…" : "新しいグループを追加…"}
-                            value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                        />
-                        {activeTab === 'task' && (
-                            <input
-                                type="datetime-local"
-                                className="form-input form-input-sm"
-                                value={dueDate}
-                                onChange={(e) => setDueDate(e.target.value)}
-                            />
-                        )}
-                        {activeTab === 'group' && (
-                            <select
-                                className="form-select"
-                                value={groupType}
-                                onChange={(e) => setGroupType(e.target.value)}
+                    {/* Tabbed Creation Form */}
+                    <div className="glass-card task-form-container">
+                        <div className="form-tabs">
+                            <button
+                                className={`tab-btn ${activeTab === 'task' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('task')}
                             >
-                                <option value="UNRANKED">順位なし</option>
-                                <option value="RANKED">順位付き</option>
-                            </select>
+                                タスク作成
+                            </button>
+                            <button
+                                className={`tab-btn ${activeTab === 'group' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('group')}
+                            >
+                                グループ作成
+                            </button>
+                        </div>
+                        <div className="form-content">
+                            <div className="form-row">
+                                <input
+                                    className="form-input"
+                                    placeholder={activeTab === 'task' ? "新しいタスクを追加…" : "新しいグループを追加…"}
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                                />
+                                {activeTab === 'task' && (
+                                    <input
+                                        type="datetime-local"
+                                        className="form-input form-input-sm"
+                                        value={dueDate}
+                                        onChange={(e) => setDueDate(e.target.value)}
+                                    />
+                                )}
+                                {activeTab === 'group' && (
+                                    <select
+                                        className="form-select"
+                                        value={groupType}
+                                        onChange={(e) => setGroupType(e.target.value)}
+                                    >
+                                        <option value="UNRANKED">順位なし</option>
+                                        <option value="RANKED">順位付き</option>
+                                    </select>
+                                )}
+                                <button className="btn btn-primary" onClick={handleCreate}>
+                                    追加
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {error && (
+                        <div className="glass-card" style={{ borderColor: 'var(--color-danger)', marginBottom: 'var(--space-md)' }}>
+                            <p style={{ color: 'var(--color-danger)', fontSize: '0.85rem' }}>⚠ {error}</p>
+                        </div>
+                    )}
+
+                    <div className="task-list">
+                        {loading ? (
+                            <div className="task-list-empty">読み込み中…</div>
+                        ) : tasks.length === 0 ? (
+                            <div className="task-list-empty">タスクがありません。</div>
+                        ) : (
+                            tasks.map((task) => (
+                                <TaskItem
+                                    key={task.id}
+                                    task={task}
+                                    onToggle={handleToggle}
+                                    onDelete={handleDelete}
+                                    onAddChild={handleAddChild}
+                                    onReorder={handleReorder}
+                                    onUpdate={handleUpdate}
+                                />
+                            ))
                         )}
-                        <button className="btn btn-primary" onClick={handleCreate}>
-                            追加
-                        </button>
                     </div>
                 </div>
-            </div>
-
-            {error && (
-                <div className="glass-card" style={{ borderColor: 'var(--color-danger)', marginBottom: 'var(--space-md)' }}>
-                    <p style={{ color: 'var(--color-danger)', fontSize: '0.85rem' }}>⚠ {error}</p>
-                </div>
-            )}
-
-            <div className="task-list">
-                {loading ? (
-                    <div className="task-list-empty">読み込み中…</div>
-                ) : tasks.length === 0 ? (
-                    <div className="task-list-empty">タスクがありません。</div>
-                ) : (
-                    tasks.map((task) => (
-                        <TaskItem
-                            key={task.id}
-                            task={task}
-                            onToggle={handleToggle}
-                            onDelete={handleDelete}
-                            onAddChild={handleAddChild}
-                            onReorder={handleReorder}
-                            onUpdate={handleUpdate}
-                        />
-                    ))
-                )}
-            </div>
-        </div>
+            } />
+        </Routes>
     );
 }
