@@ -43,6 +43,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "group_type",
             "order",
             "priority",
+            "memo",
             "completion_completed",
             "completion_total",
             "created_at",
@@ -54,7 +55,18 @@ class TaskSerializer(serializers.ModelSerializer):
     def get_children(self, obj):
         if not obj.is_group:
             return []
-        children = obj.children.all().order_by("order", "created_at")
+        
+        from django.db.models import Case, When, Value
+        # 1. 'RANKED'を最優先(0)、その他を次点(1)とする
+        # 2. その中で優先度(priority)をソート
+        # 3. さらに手動順序(order)を考慮
+        children = obj.children.all().order_by(
+            Case(When(group_type='RANKED', then=Value(0)), default=Value(1)),
+            "priority", 
+            "order", 
+            "created_at"
+        )
+            
         return TaskSerializer(children, many=True, context=self.context).data
 
     def get_completion_completed(self, obj):
@@ -82,6 +94,7 @@ class TaskCreateUpdateSerializer(serializers.ModelSerializer):
             "group_type",
             "order",
             "priority",
+            "memo",
             "created_at",
             "updated_at",
         ]
@@ -95,8 +108,8 @@ class TaskCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"group_type": "グループタスクにはグループ種別が必要です。"}
             )
-        if not is_group and group_type:
-            data["group_type"] = None
+        # 以前はここで !is_group の場合に group_type を None にしていましたが、
+        # 通常のタスクでも「順位付き」等の種別を持てるように制限を解除します。
 
         # Validate parent is a group
         parent = data.get("parent")

@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
+import MemoModal from './MemoModal';
 
 /**
  * Recursive TaskItem component for rendering hierarchical tasks.
  * Supports groups, ordering (drag & drop), expand/collapse, and inline child creation.
  */
-export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReorder, onUpdate, depth = 0 }) {
+export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReorder, onUpdate, depth = 0, parentGroupType = null }) {
     const [expanded, setExpanded] = useState(true);
     const [showAddChild, setShowAddChild] = useState(false);
     const [childTitle, setChildTitle] = useState('');
@@ -16,6 +17,8 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
     const [editTitle, setEditTitle] = useState(task.title);
     const [editDueDate, setEditDueDate] = useState('');
     const [editPriority, setEditPriority] = useState(task.priority || 99);
+    const [editGroupType, setEditGroupType] = useState(task.group_type || 'UNRANKED');
+    const [isMemoOpen, setIsMemoOpen] = useState(false);
 
     const dragRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -53,12 +56,13 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
             due_date: childDueDate || null,
             priority: parseInt(childPriority) || 99,
             is_group: childIsGroup,
-            group_type: childIsGroup ? childGroupType : null,
+            group_type: childGroupType,
         });
         setChildTitle('');
         setChildDueDate('');
         setChildPriority(99);
         setChildIsGroup(false);
+        setChildGroupType('UNRANKED');
         setShowAddChild(false);
     };
 
@@ -75,6 +79,7 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         setEditTitle(task.title);
         setEditDueDate(toLocalDateTimeString(task.due_date));
         setEditPriority(task.priority || 99);
+        setEditGroupType(task.group_type || 'UNRANKED');
         setIsEditing(true);
     };
 
@@ -91,6 +96,9 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         if (parseInt(editPriority) !== (task.priority || 99)) {
             updates.priority = parseInt(editPriority) || 99;
         }
+        if (editGroupType !== (task.group_type || 'UNRANKED')) {
+            updates.group_type = editGroupType;
+        }
 
         if (Object.keys(updates).length > 0) {
             onUpdate(task.id, updates);
@@ -105,6 +113,11 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
     const handleDueDateClear = (e) => {
         e.stopPropagation();
         setEditDueDate('');
+    };
+
+    const handleMemoSave = (newMemo) => {
+        onUpdate(task.id, { memo: newMemo });
+        setIsMemoOpen(false);
     };
 
     // Drag and drop — store both task id and parent id for same-level matching
@@ -151,7 +164,7 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         <div
             ref={dragRef}
             className={`task-item ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
-            draggable={true}
+            draggable={task.group_type !== 'RANKED'}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
@@ -160,8 +173,10 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
             style={{ animationDelay: `${depth * 50}ms` }}
         >
             <div className="task-item-header">
-                {/* Drag handle */}
-                <span className="drag-handle" title="ドラッグで並べ替え">⠿</span>
+                {/* Drag handle - only show if manual reordering is allowed (UNRANKED item) */}
+                {task.group_type !== 'RANKED' && (
+                    <span className="drag-handle" title="ドラッグで並べ替え">⠿</span>
+                )}
 
                 {/* Group expand / Single checkbox */}
                 {isGroup ? (
@@ -189,6 +204,8 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                 placeholder="タスク名"
                                 autoFocus
                             />
+
+                            {/* 優先度付きタスク（編集画面） */}
                             {!isGroup && (
                                 <div className="due-date-edit-container">
                                     <input
@@ -204,62 +221,129 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                     >
                                         ×
                                     </button>
-                                    <input
-                                        type="number"
-                                        className="form-input form-input-xs ml-xs"
-                                        style={{ width: '60px' }}
-                                        value={editPriority}
-                                        onChange={(e) => setEditPriority(e.target.value)}
-                                        placeholder="優先度"
-                                        title="優先度 (数値が小さいほど高い)"
-                                    />
+
+                                    <label className="form-checkbox-label ml-xs">
+                                        <input
+                                            type="checkbox"
+                                            checked={editGroupType === 'RANKED'}
+                                            onChange={(e) => setEditGroupType(e.target.checked ? 'RANKED' : 'UNRANKED')}
+                                        />
+                                        順位付き
+                                        {editGroupType === 'RANKED' && (
+                                            <input
+                                                type="number"
+                                                className="form-input form-input-xs ml-xs"
+                                                style={{ width: '120px' }}
+                                                value={editPriority}
+                                                onChange={(e) => setEditPriority(e.target.value)}
+                                                placeholder="優先度"
+                                                title="優先度 (数値が小さいほど高い)"
+                                            />
+                                        )}
+                                    </label>
+
+
+                                </div>
+                            )}
+
+                            {/* グループ */}
+                            {isGroup && (
+                                <div className="due-date-edit-container">
+                                    <label className="form-checkbox-label">
+                                        <input
+                                            type="checkbox"
+                                            checked={editGroupType === 'RANKED'}
+                                            onChange={(e) => setEditGroupType(e.target.checked ? 'RANKED' : 'UNRANKED')}
+                                        />
+                                        順位付き_追加画面？
+                                        {editGroupType === 'RANKED' && (
+                                            <input
+                                                type="number"
+                                                className="form-input form-input-xs ml-xs"
+                                                style={{ width: '120px' }}
+                                                value={editPriority}
+                                                onChange={(e) => setEditPriority(e.target.value)}
+                                                placeholder="優先度"
+                                                title="優先度 (数値が小さいほど高い)"
+                                            />
+                                        )}
+                                    </label>
                                 </div>
                             )}
                         </div>
                     ) : (
-                        <div className={`task-title ${task.is_completed ? 'completed' : ''}`}>
+                        <div
+                            className={`task-title ${task.is_completed ? 'completed' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); setIsMemoOpen(true); }}
+                            style={{ cursor: 'pointer' }}
+                            title="クリックでメモを表示"
+                        >
                             {task.title}
                         </div>
                     )}
+
+                    {/* ToDoList 直下（親なし） */}
                     <div className="task-meta">
+
+                        {/* 優先度付きグループ */}
                         {isGroup && (
                             <>
                                 <span className="task-badge task-badge-group">
                                     📁
                                 </span>
-                                {isRanked && (
+
+                                {/* 順位付きを非表示 */}
+                                {task.group_type === 'RANKED' && false && (
                                     <span className="task-badge task-badge-ranked">
                                         ↕ 順位付き
                                     </span>
                                 )}
-                                {task.priority < 99 && (
-                                    <span className="task-badge task-badge-priority">
-                                        P{task.priority || 99}
-                                    </span>
-                                )}
+
+
                                 <span className="task-progress">
                                     <span className="task-progress-bar">
                                         <span className="task-progress-fill" style={{ width: `${progressPercent}%` }} />
                                     </span>
                                     {task.completion_completed}/{task.completion_total}
                                 </span>
-                            </>
+                                {task.group_type === 'RANKED' && parentGroupType !== 'RANKED' && (
+                                    <span className="task-badge task-badge-priority">
+                                        優先度{task.priority || ''}
+                                    </span>
+                                )}                            </>
                         )}
+
                         {/* Due date display (Static) - Only show if deadline exists */}
+                        {/* 基本タスク */}
                         {!isEditing && displayDue && (
                             <span className={`task-due ${dueStatus}`}>
                                 📅 {formatDate(displayDue)}
                             </span>
                         )}
-                        {!isEditing && !isGroup && task.priority < 99 && (
+                        {/* 順位付きを非表示 */}
+                        {!isEditing && !isGroup && task.group_type === 'RANKED' && false && (
+                            <span className="task-badge task-badge-ranked">
+                                ↕ 順位付き
+                            </span>
+                        )}
+
+                        {!isEditing && !isGroup && task.group_type === 'RANKED' && (
+                            <span className="task-badge task-badge-priority">
+                                優先度{task.priority || ''}
+                            </span>
+                        )}
+
+                        {/* 親グループが優先度月出ないこと */}
+                        {/* {!isEditing && !isGroup && task.group_type === 'RANKED' && parentGroupType !== 'RANKED' && (
                             <span className="task-badge task-badge-priority">
                                 P{task.priority || 99}
                             </span>
-                        )}
+                        )} */}
                     </div>
                 </div>
 
                 {/* Actions */}
+                {/* 右端（編集中のアクション or 子タスク追加・削除 */}
                 <div className="task-actions" onClick={(e) => e.stopPropagation()}>
                     {isEditing ? (
                         <>
@@ -326,14 +410,7 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                             value={childDueDate}
                             onChange={(e) => setChildDueDate(e.target.value)}
                         />
-                        <input
-                            type="number"
-                            className="form-input form-input-xs"
-                            style={{ width: '60px' }}
-                            placeholder="優先度"
-                            value={childPriority}
-                            onChange={(e) => setChildPriority(e.target.value)}
-                        />
+
                         <label className="form-checkbox-label">
                             <input
                                 type="checkbox"
@@ -342,15 +419,23 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                             />
                             グループ
                         </label>
-                        {childIsGroup && (
-                            <select
-                                className="form-select"
-                                value={childGroupType}
-                                onChange={(e) => setChildGroupType(e.target.value)}
-                            >
-                                <option value="UNRANKED">順位なし</option>
-                                <option value="RANKED">順位付き</option>
-                            </select>
+                        <label className="form-checkbox-label">
+                            <input
+                                type="checkbox"
+                                checked={childGroupType === 'RANKED'}
+                                onChange={(e) => setChildGroupType(e.target.checked ? 'RANKED' : 'UNRANKED')}
+                            />
+                            順位付き？？？？どこ？
+                        </label>
+                        {childGroupType === 'RANKED' && (
+                            <input
+                                type="number"
+                                className="form-input form-input-xs"
+                                style={{ width: '60px' }}
+                                placeholder="優先度"
+                                value={childPriority}
+                                onChange={(e) => setChildPriority(e.target.value)}
+                            />
                         )}
                         <button className="btn btn-primary" onClick={handleAddChild}>追加</button>
                     </div>
@@ -370,10 +455,19 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                             onReorder={onReorder}
                             onUpdate={onUpdate}
                             depth={depth + 1}
+                            parentGroupType={task.group_type}
                         />
                     ))}
                 </div>
             )}
+
+            <MemoModal
+                isOpen={isMemoOpen}
+                onClose={() => setIsMemoOpen(false)}
+                memo={task.memo}
+                onSave={handleMemoSave}
+                taskTitle={task.title}
+            />
         </div>
     );
 }

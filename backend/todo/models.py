@@ -24,6 +24,7 @@ class Task(models.Model):
     )
     title = models.CharField("タイトル", max_length=255)
     description = models.TextField("説明", blank=True, default="")
+    memo = models.TextField("メモ", blank=True, default="")
     due_date = models.DateTimeField("期限", null=True, blank=True)
     is_completed = models.BooleanField("完了", default=False)
 
@@ -72,6 +73,12 @@ class Task(models.Model):
     def __str__(self):
         prefix = "[Group] " if self.is_group else ""
         return f"{prefix}{self.title}"
+
+    def save(self, *args, **kwargs):
+        # 「順位なし」または種別未設定の場合は、優先度を最大値(INT_MAX)に固定
+        if self.group_type == self.GroupType.UNRANKED or self.group_type is None:
+            self.priority = 2147483647
+        super().save(*args, **kwargs)
 
     # ---- Deadline inheritance logic ----
 

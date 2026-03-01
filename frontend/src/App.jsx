@@ -55,13 +55,14 @@ export default function App() {
             await api.createTask({
                 title: title.trim(),
                 due_date: isGroup ? null : (dueDate || null),
-                priority: parseInt(priority) || 99,
+                priority: parseInt(priority) || 1000,
                 is_group: isGroup,
-                group_type: isGroup ? groupType : null,
+                group_type: groupType,
             });
             setTitle('');
             setDueDate('');
             setPriority(99);
+            setGroupType('UNRANKED');
             fetchTasks();
         } catch (err) {
             setError(err.message);
@@ -205,36 +206,52 @@ export default function App() {
                                                 value={dueDate}
                                                 onChange={(e) => setDueDate(e.target.value)}
                                             />
-                                            <input
-                                                type="number"
-                                                className="form-input form-input-xs"
-                                                style={{ width: '80px' }}
-                                                placeholder="優先度"
-                                                value={priority}
-                                                onChange={(e) => setPriority(e.target.value)}
-                                                title="優先度 (数値が小さいほど高い)"
-                                            />
+                                            <label className="form-checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={groupType === 'RANKED'}
+                                                    onChange={(e) => setGroupType(e.target.checked ? 'RANKED' : 'UNRANKED')}
+                                                />
+                                                順位付き
+                                            </label>
+
+                                            {/* ここの表示・非表示を設定する。 */}
+                                            {groupType === 'RANKED' && (
+                                                <input
+                                                    type="number"
+                                                    className="form-input form-input-xs"
+                                                    style={{ width: '80px' }}
+                                                    placeholder="優先度"
+                                                    value={priority}
+                                                    onChange={(e) => setPriority(e.target.value)}
+                                                    title="優先度 (数値が小さいほど高い)"
+                                                />
+                                            )}
                                         </>
                                     )}
                                     {activeTab === 'group' && (
                                         <>
-                                            <select
-                                                className="form-select"
-                                                value={groupType}
-                                                onChange={(e) => setGroupType(e.target.value)}
-                                            >
-                                                <option value="UNRANKED">順位なし</option>
-                                                <option value="RANKED">順位付き</option>
-                                            </select>
-                                            <input
-                                                type="number"
-                                                className="form-input form-input-xs"
-                                                style={{ width: '80px' }}
-                                                placeholder="優先度"
-                                                value={priority}
-                                                onChange={(e) => setPriority(e.target.value)}
-                                                title="優先度 (数値が小さいほど高い)"
-                                            />
+                                            <label className="form-checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={groupType === 'RANKED'}
+                                                    onChange={(e) => setGroupType(e.target.checked ? 'RANKED' : 'UNRANKED')}
+                                                />
+                                                順位付き
+                                            </label>
+                                            {/* ここの表示・非表示を設定する。 */}
+                                            {groupType === 'RANKED' && (
+                                                <input
+                                                    type="number"
+                                                    className="form-input form-input-xs"
+                                                    style={{ width: '80px' }}
+                                                    placeholder="優先度"
+                                                    value={priority}
+                                                    onChange={(e) => setPriority(e.target.value)}
+                                                    title="優先度 (数値が小さいほど高い)"
+                                                />
+                                            )}
+
                                         </>
                                     )}
                                     <button className="btn btn-primary" onClick={handleCreate}>
@@ -265,6 +282,7 @@ export default function App() {
                                         onAddChild={handleAddChild}
                                         onReorder={handleReorder}
                                         onUpdate={handleUpdate}
+                                        parentGroupType={null}
                                     />
                                 ))
                             )}

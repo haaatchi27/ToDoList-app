@@ -12,6 +12,7 @@ class TaskAdmin(admin.ModelAdmin):
         "due_date",
         "is_completed",
         "order",
+        "priority",
     ]
     list_filter = ["is_group", "is_completed", "group_type"]
     search_fields = ["title", "description"]

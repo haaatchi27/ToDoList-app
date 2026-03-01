@@ -57,8 +57,12 @@ class TaskViewSet(viewsets.ModelViewSet):
         """Return only top-level tasks for list; all tasks for detail, filtered by user."""
         user = self.request.user
         if self.action == "list":
+            from django.db.models import Case, When, Value
             return Task.objects.filter(user=user, parent__isnull=True).order_by(
-                "order", "created_at"
+                Case(When(group_type='RANKED', then=Value(0)), default=Value(1)),
+                "priority", 
+                "order", 
+                "created_at"
             )
         return Task.objects.filter(user=user)
 
