@@ -14,6 +14,11 @@ async function request(url, options = {}) {
 }
 
 export const api = {
+    register: (data) =>
+        request('/register/', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
     getTasks: () => request('/tasks/'),
     getTask: (id) => request(`/tasks/${id}/`),
     createTask: (data) => request('/tasks/', { method: 'POST', body: JSON.stringify(data) }),

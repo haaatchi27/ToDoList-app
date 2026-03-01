@@ -641,3 +641,140 @@ body::before {
     opacity: 1;
   }
 }
+
+/* ===== Auth Page ===== */
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-md);
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+}
+
+.auth-card h2 {
+  text-align: center;
+  margin-bottom: var(--space-lg);
+  background: var(--accent-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.form-group {
+  margin-bottom: var(--space-md);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.btn-block {
+  width: 100%;
+  margin-top: var(--space-md);
+}
+
+.auth-switch {
+  margin-top: var(--space-lg);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.error-text {
+  color: var(--color-danger);
+  font-size: 0.8rem;
+  margin-top: var(--space-xs);
+}
+
+/* ===== Form Tabs ===== */
+.task-form-container {
+  margin-bottom: var(--space-xl);
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.form-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.tab-btn {
+  flex: 1;
+  padding: var(--space-md);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tab-btn.active {
+  color: var(--accent-primary);
+  position: relative;
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent-gradient);
+}
+
+.form-content {
+  padding: var(--space-lg);
+}
+
+/* ===== Registration Section ===== */
+.registration-section {
+  margin-top: var(--space-2xl);
+  border-top: 1px solid var(--border-color);
+}
+
+.registration-section h3 {
+  font-size: 1.1rem;
+  margin-bottom: var(--space-md);
+  color: var(--text-secondary);
+}
+
+.registration-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.registration-form .form-input {
+  flex: 1 1 200px;
+}
+
+.reg-message {
+  margin-top: var(--space-sm);
+  font-size: 0.85rem;
+  color: var(--accent-primary);
+}

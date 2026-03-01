@@ -1,13 +1,17 @@
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from .models import Task
 from .serializers import (
     TaskSerializer,
     TaskCreateUpdateSerializer,
     TaskReorderSerializer,
+    UserSerializer,
 )
+from django.contrib.auth.models import User
 
 VALID_SORT_FIELDS = {"title", "due_date", "created_at"}
 
@@ -27,6 +31,14 @@ def _sort_and_save_order(tasks_qs, sort_by):
 
     for order, task in enumerate(sorted_tasks):
         Task.objects.filter(id=task.id).update(order=order)
+
+
+@method_decorator(csrf_exempt, name="dispatch")
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    authentication_classes = []  # Bypass CSRF checks
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = UserSerializer
 
 
 class TaskViewSet(viewsets.ModelViewSet):
