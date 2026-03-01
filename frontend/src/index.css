@@ -727,6 +727,29 @@ body::before {
   opacity: 1;
 }
 
+/* Touch-specific adjustments for DnD */
+@media (pointer: coarse) {
+  .drag-handle {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    opacity: 0.8;
+  }
+}
+
+/* mobile-drag-drop polyfill specific styles */
+[draggable] {
+  -moz-user-select: none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Required to prevent default touch behaviors like scrolling while dragging */
+  touch-action: none;
+}
+
 .task-item.dragging {
   opacity: 0.4;
   border-color: var(--accent-primary);
