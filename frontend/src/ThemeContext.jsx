@@ -4,17 +4,25 @@ const ThemeContext = createContext(null);
 
 export const themes = [
     { id: 'indigo', name: 'Indigo' },
+    { id: 'light', name: 'Light' },
+    { id: 'dark', name: 'Dark' },
     { id: 'ocean', name: 'Ocean' },
     { id: 'sunset', name: 'Sunset' },
     { id: 'forest', name: 'Forest' },
+    { id: 'midnight', name: 'Midnight' },
+    { id: 'rose', name: 'Rose' },
 ];
 
 export const ThemeProvider = ({ children }) => {
     const [theme, setTheme] = useState(localStorage.getItem('theme') || 'indigo');
 
     useEffect(() => {
-        // Remove all theme classes
-        document.body.classList.remove('theme-ocean', 'theme-sunset', 'theme-forest');
+        // Remove all theme classes that are NOT the default
+        themes.forEach(t => {
+            if (t.id !== 'indigo') {
+                document.body.classList.remove(`theme-${t.id}`);
+            }
+        });
 
         // Add current theme class (if not indigo)
         if (theme !== 'indigo') {

@@ -2,10 +2,11 @@ import { useState, useCallback, useEffect } from 'react';
 import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from './api';
 import { useAuth } from './AuthContext';
-import { useTheme, themes as availableThemes } from './ThemeContext';
+import { useTheme } from './ThemeContext';
 import TaskItem from './components/TaskItem';
 import Register from './Register';
 import Login from './Login';
+import Settings from './Settings';
 
 function ProtectedRoute({ children }) {
     const { user, loading } = useAuth();
@@ -16,7 +17,6 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
     const { user, logout } = useAuth();
-    const { theme: currentTheme, setTheme } = useTheme();
     const navigate = useNavigate();
     const [tasks, setTasks] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -148,28 +148,25 @@ export default function App() {
         <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Register />} />
+            <Route path="/settings" element={
+                <ProtectedRoute>
+                    <Settings />
+                </ProtectedRoute>
+            } />
             <Route path="/" element={
                 <ProtectedRoute>
                     <div className="app-container">
                         <header className="app-header">
                             <div className="header-top">
+                                <Link to="/settings" className="btn btn-ghost btn-sm" title="設定">
+                                    ⚙️ 設定
+                                </Link>
                                 <button onClick={handleLogout} className="btn btn-ghost btn-sm">
                                     ログアウト
                                 </button>
                             </div>
                             <h1 className="app-title">ToDoList</h1>
                             <p className="app-subtitle">階層型タスク管理</p>
-
-                            <div className="theme-switcher">
-                                {availableThemes.map(t => (
-                                    <button
-                                        key={t.id}
-                                        className={`theme-btn ${t.id} ${currentTheme === t.id ? 'active' : ''}`}
-                                        title={t.name}
-                                        onClick={() => setTheme(t.id)}
-                                    />
-                                ))}
-                            </div>
                         </header>
 
                         {/* Tabbed Creation Form */}

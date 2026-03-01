@@ -195,3 +195,10 @@ class TaskViewSet(viewsets.ModelViewSet):
         return Response(
             TaskSerializer(task, context={"request": request}).data
         )
+
+class ProfileView(generics.RetrieveUpdateAPIView):
+    """View to get or update the current user's profile."""
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return self.request.user

@@ -56,4 +56,5 @@ export const api = {
             method: 'POST',
             body: JSON.stringify({ sort_by: sortBy }),
         }),
+    getProfile: () => request('/me/'),
 };
