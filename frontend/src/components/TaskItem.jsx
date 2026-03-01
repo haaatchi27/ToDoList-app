@@ -9,11 +9,14 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
     const [showAddChild, setShowAddChild] = useState(false);
     const [childTitle, setChildTitle] = useState('');
     const [childDueDate, setChildDueDate] = useState('');
+    const [childPriority, setChildPriority] = useState(99);
     const [childIsGroup, setChildIsGroup] = useState(false);
     const [childGroupType, setChildGroupType] = useState('UNRANKED');
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(task.title);
     const [editDueDate, setEditDueDate] = useState('');
+    const [editPriority, setEditPriority] = useState(task.priority || 99);
+    const [editPriority, setEditPriority] = useState(task.priority || 99);
 
     const dragRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -49,11 +52,13 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
             title: childTitle.trim(),
             parent: task.id,
             due_date: childDueDate || null,
+            priority: parseInt(childPriority) || 99,
             is_group: childIsGroup,
             group_type: childIsGroup ? childGroupType : null,
         });
         setChildTitle('');
         setChildDueDate('');
+        setChildPriority(99);
         setChildIsGroup(false);
         setShowAddChild(false);
     };
@@ -70,6 +75,7 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         e.stopPropagation();
         setEditTitle(task.title);
         setEditDueDate(toLocalDateTimeString(task.due_date));
+        setEditPriority(task.priority || 99);
         setIsEditing(true);
     };
 
@@ -82,6 +88,12 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         const oldDueDate = task.due_date ? toLocalDateTimeString(task.due_date) : '';
         if (editDueDate !== oldDueDate) {
             updates.due_date = newDueDate;
+        }
+        if (parseInt(editPriority) !== (task.priority || 99)) {
+            updates.priority = parseInt(editPriority) || 99;
+        }
+        if (parseInt(editPriority) !== (task.priority || 99)) {
+            updates.priority = parseInt(editPriority) || 99;
         }
 
         if (Object.keys(updates).length > 0) {
@@ -196,6 +208,15 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                     >
                                         ×
                                     </button>
+                                    <input
+                                        type="number"
+                                        className="form-input form-input-xs ml-xs"
+                                        style={{ width: '60px' }}
+                                        value={editPriority}
+                                        onChange={(e) => setEditPriority(e.target.value)}
+                                        placeholder="優先度"
+                                        title="優先度 (数値が小さいほど高い)"
+                                    />
                                 </div>
                             )}
                         </div>
@@ -215,6 +236,9 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                         ↕ 順位付き
                                     </span>
                                 )}
+                                <span className="task-badge task-badge-priority">
+                                    P{task.priority || 99}
+                                </span>
                                 <span className="task-progress">
                                     <span className="task-progress-bar">
                                         <span className="task-progress-fill" style={{ width: `${progressPercent}%` }} />
@@ -227,6 +251,11 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                         {!isEditing && displayDue && (
                             <span className={`task-due ${dueStatus}`}>
                                 📅 {formatDate(displayDue)}
+                            </span>
+                        )}
+                        {!isEditing && !isGroup && (
+                            <span className="task-badge task-badge-priority">
+                                P{task.priority || 99}
                             </span>
                         )}
                     </div>
@@ -298,6 +327,14 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                             className="form-input form-input-sm"
                             value={childDueDate}
                             onChange={(e) => setChildDueDate(e.target.value)}
+                        />
+                        <input
+                            type="number"
+                            className="form-input form-input-xs"
+                            style={{ width: '60px' }}
+                            placeholder="優先度"
+                            value={childPriority}
+                            onChange={(e) => setChildPriority(e.target.value)}
                         />
                         <label className="form-checkbox-label">
                             <input

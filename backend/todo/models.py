@@ -54,6 +54,13 @@ class Task(models.Model):
         help_text="RANKED グループ内の順序 (小さいほど先)",
     )
 
+    # Priority (lower means higher priority)
+    priority = models.IntegerField(
+        "優先度",
+        default=99,
+        help_text="数値が小さいほど優先度が高い (例: 1=最優先)",
+    )
+
     created_at = models.DateTimeField("作成日時", auto_now_add=True)
     updated_at = models.DateTimeField("更新日時", auto_now=True)
 

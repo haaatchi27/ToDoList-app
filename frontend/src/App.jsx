@@ -28,6 +28,7 @@ export default function App() {
     // Form state
     const [title, setTitle] = useState('');
     const [dueDate, setDueDate] = useState('');
+    const [priority, setPriority] = useState(99);
     const [groupType, setGroupType] = useState('UNRANKED');
 
     const fetchTasks = useCallback(async () => {
@@ -54,11 +55,13 @@ export default function App() {
             await api.createTask({
                 title: title.trim(),
                 due_date: isGroup ? null : (dueDate || null),
+                priority: parseInt(priority) || 99,
                 is_group: isGroup,
                 group_type: isGroup ? groupType : null,
             });
             setTitle('');
             setDueDate('');
+            setPriority(99);
             fetchTasks();
         } catch (err) {
             setError(err.message);
@@ -195,22 +198,44 @@ export default function App() {
                                         onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
                                     />
                                     {activeTab === 'task' && (
-                                        <input
-                                            type="datetime-local"
-                                            className="form-input form-input-sm"
-                                            value={dueDate}
-                                            onChange={(e) => setDueDate(e.target.value)}
-                                        />
+                                        <>
+                                            <input
+                                                type="datetime-local"
+                                                className="form-input form-input-sm"
+                                                value={dueDate}
+                                                onChange={(e) => setDueDate(e.target.value)}
+                                            />
+                                            <input
+                                                type="number"
+                                                className="form-input form-input-xs"
+                                                style={{ width: '80px' }}
+                                                placeholder="優先度"
+                                                value={priority}
+                                                onChange={(e) => setPriority(e.target.value)}
+                                                title="優先度 (数値が小さいほど高い)"
+                                            />
+                                        </>
                                     )}
                                     {activeTab === 'group' && (
-                                        <select
-                                            className="form-select"
-                                            value={groupType}
-                                            onChange={(e) => setGroupType(e.target.value)}
-                                        >
-                                            <option value="UNRANKED">順位なし</option>
-                                            <option value="RANKED">順位付き</option>
-                                        </select>
+                                        <>
+                                            <select
+                                                className="form-select"
+                                                value={groupType}
+                                                onChange={(e) => setGroupType(e.target.value)}
+                                            >
+                                                <option value="UNRANKED">順位なし</option>
+                                                <option value="RANKED">順位付き</option>
+                                            </select>
+                                            <input
+                                                type="number"
+                                                className="form-input form-input-xs"
+                                                style={{ width: '80px' }}
+                                                placeholder="優先度"
+                                                value={priority}
+                                                onChange={(e) => setPriority(e.target.value)}
+                                                title="優先度 (数値が小さいほど高い)"
+                                            />
+                                        </>
                                     )}
                                     <button className="btn btn-primary" onClick={handleCreate}>
                                         追加

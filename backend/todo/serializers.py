@@ -42,6 +42,7 @@ class TaskSerializer(serializers.ModelSerializer):
             "is_group",
             "group_type",
             "order",
+            "priority",
             "completion_completed",
             "completion_total",
             "created_at",
@@ -80,6 +81,7 @@ class TaskCreateUpdateSerializer(serializers.ModelSerializer):
             "is_group",
             "group_type",
             "order",
+            "priority",
             "created_at",
             "updated_at",
         ]

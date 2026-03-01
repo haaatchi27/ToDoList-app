@@ -649,6 +649,34 @@ body::before {
   color: var(--color-warning);
 }
 
+.task-badge-priority {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-primary-hover);
+  border: 1px solid var(--border-color);
+}
+
+.ml-xs {
+  margin-left: var(--space-xs);
+}
+
+.mb-xs {
+  margin-bottom: var(--space-xs);
+}
+
+.task-badge-priority {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-primary-hover);
+  border: 1px solid var(--border-color);
+}
+
+.ml-xs {
+  margin-left: var(--space-xs);
+}
+
+.mb-xs {
+  margin-bottom: var(--space-xs);
+}
+
 .task-progress {
   display: flex;
   align-items: center;
