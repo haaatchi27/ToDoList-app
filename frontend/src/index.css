@@ -818,7 +818,8 @@ body::before {
 
 /* ===== Task Children (Nested) ===== */
 .task-children {
-  padding: 0 var(--space-md) var(--space-md) calc(var(--space-md) + 20px + var(--space-sm));
+  padding: 0 var(--space-xs) var(--space-md) 20px;
+  /* padding: 0 var(--space-xs) var(--space-md) calc(var(--space-md) + 20px + var(--space-sm)); */
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
