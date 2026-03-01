@@ -1,4 +1,4 @@
-from rest_framework import viewsets, status, permissions, generics
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
@@ -7,9 +7,7 @@ from .serializers import (
     TaskSerializer,
     TaskCreateUpdateSerializer,
     TaskReorderSerializer,
-    UserSerializer,
 )
-from django.contrib.auth.models import User
 
 VALID_SORT_FIELDS = {"title", "due_date", "created_at"}
 
@@ -31,12 +29,6 @@ def _sort_and_save_order(tasks_qs, sort_by):
         Task.objects.filter(id=task.id).update(order=order)
 
 
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    permission_classes = (permissions.AllowAny,)
-    serializer_class = UserSerializer
-
-
 class TaskViewSet(viewsets.ModelViewSet):
     """
     API endpoint for hierarchical tasks.
@@ -49,16 +41,13 @@ class TaskViewSet(viewsets.ModelViewSet):
     POST   /api/tasks/{id}/reorder/ -> Reorder children of a group
     """
 
-    permission_classes = [permissions.IsAuthenticated]
-
     def get_queryset(self):
-        """Return only top-level tasks for the current user."""
-        user = self.request.user
+        """Return only top-level tasks for list; all tasks for detail."""
         if self.action == "list":
-            return Task.objects.filter(user=user, parent__isnull=True).order_by(
+            return Task.objects.filter(parent__isnull=True).order_by(
                 "order", "created_at"
             )
-        return Task.objects.filter(user=user)
+        return Task.objects.all()
 
     def get_serializer_class(self):
         if self.action in ("create", "update", "partial_update"):
@@ -66,7 +55,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         return TaskSerializer
 
     def perform_create(self, serializer):
-        task = serializer.save(user=self.request.user)
+        task = serializer.save()
         # Propagate due_date to parent group
         if task.parent and task.parent.is_group:
             task.parent.propagate_due_date()

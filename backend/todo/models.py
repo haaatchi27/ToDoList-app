@@ -1,6 +1,5 @@
 from django.db import models
 from django.utils import timezone
-from django.contrib.auth.models import User
 
 
 class Task(models.Model):
@@ -18,14 +17,6 @@ class Task(models.Model):
     description = models.TextField("説明", blank=True, default="")
     due_date = models.DateTimeField("期限", null=True, blank=True)
     is_completed = models.BooleanField("完了", default=False)
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name="tasks",
-        verbose_name="ユーザー",
-        null=True,  # 既存データのために一時的にnull=True
-        blank=True,
-    )
 
     # Hierarchy
     parent = models.ForeignKey(
