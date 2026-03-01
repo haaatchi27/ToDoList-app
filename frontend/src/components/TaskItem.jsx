@@ -425,7 +425,7 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                 checked={childGroupType === 'RANKED'}
                                 onChange={(e) => setChildGroupType(e.target.checked ? 'RANKED' : 'UNRANKED')}
                             />
-                            順位付き？？？？どこ？
+                            順位付き
                         </label>
                         {childGroupType === 'RANKED' && (
                             <input
