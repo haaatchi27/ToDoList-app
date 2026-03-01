@@ -138,6 +138,7 @@ export default function Settings() {
                 .theme-preview.forest { background: #10b981; }
                 .theme-preview.midnight { background: #1e293b; }
                 .theme-preview.rose { background: #e11d48; }
+                .theme-preview.gray { background: #334155; }
                 .theme-preview.light { background: #ffffff; border: 1px solid #cbd5e1; }
                 .theme-preview.dark { background: #121212; }
                 .theme-option span {

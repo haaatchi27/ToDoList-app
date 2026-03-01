@@ -135,7 +135,27 @@
   --bg-decoration-2: rgba(190, 18, 60, 0.06);
 }
 
-/* 6. Light Theme */
+/* 6. Gray Theme */
+.theme-gray {
+  --bg-primary: #334155;
+  --bg-secondary: #1e293b;
+  --bg-card: rgba(30, 41, 59, 0.7);
+  --bg-card-hover: rgba(51, 65, 85, 0.8);
+  --bg-input: rgba(51, 65, 85, 0.6);
+  --accent-primary: #94a3b8;
+  --accent-primary-hover: #cbd5e1;
+  --accent-secondary: #64748b;
+  --accent-gradient: linear-gradient(135deg, #94a3b8, #64748b, #cbd5e1);
+  --accent-glow: 0 0 20px rgba(148, 163, 184, 0.2);
+  --border-color: rgba(148, 163, 184, 0.2);
+  --border-glow: rgba(148, 163, 184, 0.3);
+  --bg-decoration-1: rgba(148, 163, 184, 0.05);
+  --bg-decoration-2: rgba(71, 85, 105, 0.05);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+}
+
+/* 7. Light Theme */
 .theme-light {
   --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;

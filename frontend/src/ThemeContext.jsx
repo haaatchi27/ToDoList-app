@@ -11,6 +11,7 @@ export const themes = [
     { id: 'forest', name: 'Forest' },
     { id: 'midnight', name: 'Midnight' },
     { id: 'rose', name: 'Rose' },
+    { id: 'gray', name: 'Gray' },
 ];
 
 export const ThemeProvider = ({ children }) => {
