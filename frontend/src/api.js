@@ -1,19 +1,38 @@
 const API_BASE = '/api';
 
 async function request(url, options = {}) {
+    const token = localStorage.getItem('token');
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers,
+    };
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const res = await fetch(`${API_BASE}${url}`, {
-        headers: { 'Content-Type': 'application/json', ...options.headers },
         ...options,
+        headers,
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || res.statusText);
+        throw new Error(err.detail || JSON.stringify(err) || res.statusText);
     }
     if (res.status === 204) return null;
     return res.json();
 }
 
 export const api = {
+    login: (username, password) =>
+        request('/token/', {
+            method: 'POST',
+            body: JSON.stringify({ username, password }),
+        }),
+    register: (data) =>
+        request('/register/', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        }),
     getTasks: () => request('/tasks/'),
     getTask: (id) => request(`/tasks/${id}/`),
     createTask: (data) => request('/tasks/', { method: 'POST', body: JSON.stringify(data) }),
