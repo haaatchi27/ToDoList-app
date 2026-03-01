@@ -208,7 +208,7 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                         {isGroup && (
                             <>
                                 <span className="task-badge task-badge-group">
-                                    📁 グループ
+                                    📁
                                 </span>
                                 {isRanked && (
                                     <span className="task-badge task-badge-ranked">
@@ -223,10 +223,10 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                 </span>
                             </>
                         )}
-                        {/* Due date display (Static) */}
-                        {!isEditing && (
+                        {/* Due date display (Static) - Only show if deadline exists */}
+                        {!isEditing && displayDue && (
                             <span className={`task-due ${dueStatus}`}>
-                                📅 {displayDue ? formatDate(displayDue) : '期限なし'}
+                                📅 {formatDate(displayDue)}
                             </span>
                         )}
                     </div>
