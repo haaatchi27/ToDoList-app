@@ -16,7 +16,6 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
     const [editTitle, setEditTitle] = useState(task.title);
     const [editDueDate, setEditDueDate] = useState('');
     const [editPriority, setEditPriority] = useState(task.priority || 99);
-    const [editPriority, setEditPriority] = useState(task.priority || 99);
 
     const dragRef = useRef(null);
     const [isDragging, setIsDragging] = useState(false);
@@ -88,9 +87,6 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         const oldDueDate = task.due_date ? toLocalDateTimeString(task.due_date) : '';
         if (editDueDate !== oldDueDate) {
             updates.due_date = newDueDate;
-        }
-        if (parseInt(editPriority) !== (task.priority || 99)) {
-            updates.priority = parseInt(editPriority) || 99;
         }
         if (parseInt(editPriority) !== (task.priority || 99)) {
             updates.priority = parseInt(editPriority) || 99;
@@ -236,9 +232,11 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                         ↕ 順位付き
                                     </span>
                                 )}
-                                <span className="task-badge task-badge-priority">
-                                    P{task.priority || 99}
-                                </span>
+                                {task.priority < 99 && (
+                                    <span className="task-badge task-badge-priority">
+                                        P{task.priority || 99}
+                                    </span>
+                                )}
                                 <span className="task-progress">
                                     <span className="task-progress-bar">
                                         <span className="task-progress-fill" style={{ width: `${progressPercent}%` }} />
@@ -253,7 +251,7 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                 📅 {formatDate(displayDue)}
                             </span>
                         )}
-                        {!isEditing && !isGroup && (
+                        {!isEditing && !isGroup && task.priority < 99 && (
                             <span className="task-badge task-badge-priority">
                                 P{task.priority || 99}
                             </span>
