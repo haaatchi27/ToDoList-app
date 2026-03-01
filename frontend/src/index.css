@@ -227,6 +227,15 @@
   background: #e11d48;
 }
 
+.theme-btn.light {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+}
+
+.theme-btn.dark {
+  background: #121212;
+}
+
 /* ===== Reset & Base ===== */
 *,
 *::before,
