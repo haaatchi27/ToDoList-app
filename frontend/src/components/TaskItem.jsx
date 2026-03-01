@@ -11,9 +11,8 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
     const [childDueDate, setChildDueDate] = useState('');
     const [childIsGroup, setChildIsGroup] = useState(false);
     const [childGroupType, setChildGroupType] = useState('UNRANKED');
-    const [editing, setEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(task.title);
-    const [editingDueDate, setEditingDueDate] = useState(false);
     const [editDueDate, setEditDueDate] = useState('');
 
     const dragRef = useRef(null);
@@ -59,14 +58,7 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         setShowAddChild(false);
     };
 
-    const handleEditSubmit = () => {
-        if (editTitle.trim() && editTitle !== task.title) {
-            onUpdate(task.id, { title: editTitle.trim() });
-        }
-        setEditing(false);
-    };
-
-    // Due date editing (only for non-group tasks)
+    // Helper to format date for datetime-local input
     const toLocalDateTimeString = (isoStr) => {
         if (!isoStr) return '';
         const d = new Date(isoStr);
@@ -74,27 +66,37 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     };
 
-    const handleDueDateEdit = (e) => {
+    const handleEditStart = (e) => {
         e.stopPropagation();
-        if (!isGroup) {
-            setEditDueDate(toLocalDateTimeString(task.due_date));
-            setEditingDueDate(true);
-        }
+        setEditTitle(task.title);
+        setEditDueDate(toLocalDateTimeString(task.due_date));
+        setIsEditing(true);
     };
 
-    const handleDueDateSubmit = () => {
-        const newVal = editDueDate || null;
-        const oldVal = task.due_date ? toLocalDateTimeString(task.due_date) : '';
-        if (editDueDate !== oldVal) {
-            onUpdate(task.id, { due_date: newVal });
+    const handleEditSave = () => {
+        const updates = {};
+        if (editTitle.trim() && editTitle !== task.title) {
+            updates.title = editTitle.trim();
         }
-        setEditingDueDate(false);
+        const newDueDate = editDueDate || null;
+        const oldDueDate = task.due_date ? toLocalDateTimeString(task.due_date) : '';
+        if (editDueDate !== oldDueDate) {
+            updates.due_date = newDueDate;
+        }
+
+        if (Object.keys(updates).length > 0) {
+            onUpdate(task.id, updates);
+        }
+        setIsEditing(false);
+    };
+
+    const handleEditCancel = () => {
+        setIsEditing(false);
     };
 
     const handleDueDateClear = (e) => {
         e.stopPropagation();
-        onUpdate(task.id, { due_date: null });
-        setEditingDueDate(false);
+        setEditDueDate('');
     };
 
     // Drag and drop — store both task id and parent id for same-level matching
@@ -169,22 +171,36 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                 )}
 
                 {/* Task info */}
-                <div className="task-info" onClick={() => isGroup && setExpanded(!expanded)}>
-                    {editing ? (
-                        <input
-                            className="form-input"
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            onBlur={handleEditSubmit}
-                            onKeyDown={(e) => e.key === 'Enter' && handleEditSubmit()}
-                            autoFocus
-                            onClick={(e) => e.stopPropagation()}
-                        />
+                <div className="task-info" onClick={() => isGroup && !isEditing && setExpanded(!expanded)}>
+                    {isEditing ? (
+                        <div className="edit-form" onClick={(e) => e.stopPropagation()}>
+                            <input
+                                className="form-input mb-xs"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                placeholder="タスク名"
+                                autoFocus
+                            />
+                            {!isGroup && (
+                                <div className="due-date-edit-container">
+                                    <input
+                                        type="datetime-local"
+                                        className="form-input form-input-due"
+                                        value={editDueDate}
+                                        onChange={(e) => setEditDueDate(e.target.value)}
+                                    />
+                                    <button
+                                        className="btn btn-icon btn-ghost btn-xs"
+                                        onClick={handleDueDateClear}
+                                        title="期限をクリア"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     ) : (
-                        <div
-                            className={`task-title ${task.is_completed ? 'completed' : ''}`}
-                            onDoubleClick={() => { setEditTitle(task.title); setEditing(true); }}
-                        >
+                        <div className={`task-title ${task.is_completed ? 'completed' : ''}`}>
                             {task.title}
                         </div>
                     )}
@@ -207,43 +223,9 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                                 </span>
                             </>
                         )}
-                        {/* Due date display / edit */}
-                        {isGroup ? (
-                            displayDue && (
-                                <span className={`task-due ${dueStatus}`} title="グループの期限は未完了タスクから自動計算">
-                                    📅 {formatDate(displayDue)}
-                                </span>
-                            )
-                        ) : editingDueDate ? (
-                            <span className="task-due-edit" onClick={(e) => e.stopPropagation()}>
-                                <input
-                                    type="datetime-local"
-                                    className="form-input form-input-due"
-                                    value={editDueDate}
-                                    onChange={(e) => setEditDueDate(e.target.value)}
-                                    onBlur={handleDueDateSubmit}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleDueDateSubmit();
-                                        if (e.key === 'Escape') setEditingDueDate(false);
-                                    }}
-                                    autoFocus
-                                />
-                                {task.due_date && (
-                                    <button
-                                        className="btn btn-icon btn-ghost btn-due-clear"
-                                        onClick={handleDueDateClear}
-                                        title="期限を削除"
-                                    >
-                                        ×
-                                    </button>
-                                )}
-                            </span>
-                        ) : (
-                            <span
-                                className={`task-due ${dueStatus} task-due-clickable`}
-                                onClick={handleDueDateEdit}
-                                title="クリックで期限を編集"
-                            >
+                        {/* Due date display (Static) */}
+                        {!isEditing && (
+                            <span className={`task-due ${dueStatus}`}>
                                 📅 {displayDue ? formatDate(displayDue) : '期限なし'}
                             </span>
                         )}
@@ -251,30 +233,51 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                 </div>
 
                 {/* Actions */}
-                <div className="task-actions">
-                    {isGroup && (
-                        <button
-                            className="btn btn-icon btn-ghost"
-                            onClick={() => setShowAddChild(!showAddChild)}
-                            title="子タスクを追加"
-                        >
-                            +
-                        </button>
+                <div className="task-actions" onClick={(e) => e.stopPropagation()}>
+                    {isEditing ? (
+                        <>
+                            <button
+                                className="btn btn-icon btn-primary"
+                                onClick={handleEditSave}
+                                title="保存"
+                            >
+                                ✓
+                            </button>
+                            <button
+                                className="btn btn-icon btn-ghost"
+                                onClick={handleEditCancel}
+                                title="キャンセル"
+                            >
+                                ⤺
+                            </button>
+                            <button
+                                className="btn btn-icon btn-danger"
+                                onClick={() => onDelete(task.id)}
+                                title="削除"
+                            >
+                                ×
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            {isGroup && (
+                                <button
+                                    className="btn btn-icon btn-ghost"
+                                    onClick={() => setShowAddChild(!showAddChild)}
+                                    title="子タスクを追加"
+                                >
+                                    +
+                                </button>
+                            )}
+                            <button
+                                className="btn btn-icon btn-ghost"
+                                onClick={handleEditStart}
+                                title="編集"
+                            >
+                                ✎
+                            </button>
+                        </>
                     )}
-                    <button
-                        className="btn btn-icon btn-ghost"
-                        onClick={() => { setEditTitle(task.title); setEditing(true); }}
-                        title="編集"
-                    >
-                        ✎
-                    </button>
-                    <button
-                        className="btn btn-icon btn-danger"
-                        onClick={() => onDelete(task.id)}
-                        title="削除"
-                    >
-                        ×
-                    </button>
                 </div>
             </div>
 

@@ -123,7 +123,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         task_ids = serializer.validated_data["task_ids"]
 
-        top_level = Task.objects.filter(parent__isnull=True)
+        top_level = Task.objects.filter(user=request.user, parent__isnull=True)
         top_level_ids = set(top_level.values_list("id", flat=True))
 
         if set(task_ids) != top_level_ids:
@@ -176,7 +176,7 @@ class TaskViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        top_level = Task.objects.filter(parent__isnull=True)
+        top_level = Task.objects.filter(user=request.user, parent__isnull=True)
         _sort_and_save_order(top_level, sort_by)
 
         updated_tasks = Task.objects.filter(parent__isnull=True).order_by(
