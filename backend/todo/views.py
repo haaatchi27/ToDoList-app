@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
+import os
+from django.conf import settings
 from .models import Task
 from .serializers import (
     TaskSerializer,
@@ -200,9 +202,103 @@ class TaskViewSet(viewsets.ModelViewSet):
             TaskSerializer(task, context={"request": request}).data
         )
 
+    @action(detail=False, methods=['get'])
+    def daily_summary(self, request):
+        """
+        Returns a daily summary grouping of completed and failed tasks.
+        """
+        from collections import defaultdict
+        from django.utils import timezone
+        
+        user = request.user
+        tasks = Task.objects.filter(user=user)
+        
+        summary = {}
+        
+        for task in tasks:
+            if task.status == Task.Status.COMPLETED:
+                localt = timezone.localtime(task.updated_at)
+                date_str = localt.strftime("%Y-%m-%d")
+                if date_str not in summary:
+                    summary[date_str] = {"completed_count": 0, "failed_count": 0, "completed_tasks": [], "failed_tasks": []}
+                summary[date_str]["completed_count"] += 1
+                summary[date_str]["completed_tasks"].append(TaskSerializer(task, context={"request": request}).data)
+            elif task.status == Task.Status.FAILED:
+                if task.due_date:
+                    localt = timezone.localtime(task.due_date)
+                    date_str = localt.strftime("%Y-%m-%d")
+                    if date_str not in summary:
+                        summary[date_str] = {"completed_count": 0, "failed_count": 0, "completed_tasks": [], "failed_tasks": []}
+                    summary[date_str]["failed_count"] += 1
+                    summary[date_str]["failed_tasks"].append(TaskSerializer(task, context={"request": request}).data)
+
+        result = []
+        for date_str in sorted(summary.keys(), reverse=True):
+            data = summary[date_str]
+            result.append({
+                "date": date_str,
+                "completed_count": data["completed_count"],
+                "failed_count": data["failed_count"],
+                "completed_tasks": data["completed_tasks"],
+                "failed_tasks": data["failed_tasks"],
+            })
+            
+        return Response(result)
+
+    @action(detail=False, methods=['get'])
+    def flat_sorted(self, request):
+        """
+        Returns a flat list of all active (uncompleted) tasks, sorted by due_date or recommended_datetime.
+        Null values are pushed to the end.
+        """
+        from django.db.models import F
+        user = request.user
+        sort_by = request.query_params.get("sort_by", "due_date")
+        
+        # Base queryset: only uncompleted tasks
+        qs = Task.objects.filter(user=user, is_completed=False)
+        
+        if sort_by == 'recommended_datetime':
+            qs = qs.order_by(F('recommended_datetime').asc(nulls_last=True), "priority", "created_at")
+        else:
+            qs = qs.order_by(F('due_date').asc(nulls_last=True), "priority", "created_at")
+            
+        # Use TaskCreateUpdateSerializer to get a flat representation without nested children objects
+        serializer = TaskCreateUpdateSerializer(qs, many=True, context={"request": request})
+        
+        # Re-attach computed properties like status that are only computed on the Model cleanly
+        # TaskCreateUpdateSerializer is a ModelSerializer but might not explicitly define 'status'.
+        # Let's augment the serialized data with 'status' and 'parent_title' for better UI context.
+        data = serializer.data
+        task_dict = {t.id: t for t in qs}
+        for item in data:
+            task = task_dict[item["id"]]
+            item["status"] = task.status
+            item["parent_title"] = task.parent.title if task.parent else None
+            
+        return Response(data)
+
 class ProfileView(generics.RetrieveUpdateAPIView):
     """View to get or update the current user's profile."""
     serializer_class = UserSerializer
 
     def get_object(self):
         return self.request.user
+
+class AccessLogView(generics.GenericAPIView):
+    """View to fetch the content of access.log."""
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        log_path = os.path.join(settings.BASE_DIR, "access.log")
+        if not os.path.exists(log_path):
+            return Response({"content": "ログファイルがまだ生成されていません。"}, status=status.HTTP_404_NOT_FOUND)
+        
+        try:
+            with open(log_path, "r", encoding="utf-8") as f:
+                # Get last 200 lines to keep it manageable
+                lines = f.readlines()
+                content = "".join(lines[-200:])
+            return Response({"content": content})
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

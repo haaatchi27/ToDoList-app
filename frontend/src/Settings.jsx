@@ -65,7 +65,10 @@ export default function Settings() {
                             <div
                                 key={t.id}
                                 className={`theme-option ${currentTheme === t.id ? 'active' : ''}`}
-                                onClick={() => setTheme(t.id)}
+                                onClick={() => {
+                                    setTheme(t.id);
+                                    api.updateProfile({ theme: t.id }).catch(err => console.error("Failed to save theme setting:", err));
+                                }}
                             >
                                 <div className={`theme-preview ${t.id}`}></div>
                                 <span>{t.name}</span>

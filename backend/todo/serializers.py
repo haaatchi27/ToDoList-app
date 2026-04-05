@@ -4,19 +4,30 @@ from .models import Task
 
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)
+    theme = serializers.CharField(source='profile.theme', required=False)
 
     class Meta:
         model = User
-        fields = ["id", "username", "password", "email"]
+        fields = ["id", "username", "password", "email", "theme"]
 
     def create(self, validated_data):
         user = User.objects.create_user(
             username=validated_data["username"],
             email=validated_data.get("email", ""),
-            password=validated_data["password"],
+            password=validated_data.get("password", "defaultpassword"),
         )
         return user
+
+    def update(self, instance, validated_data):
+        profile_data = validated_data.pop('profile', {})
+        theme = profile_data.get('theme')
+        if theme is not None:
+            from .models import UserProfile
+            profile, _ = UserProfile.objects.get_or_create(user=instance)
+            profile.theme = theme
+            profile.save()
+        return super().update(instance, validated_data)
 
 
 class TaskSerializer(serializers.ModelSerializer):
@@ -36,8 +47,11 @@ class TaskSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "due_date",
+            "recommended_datetime",
             "effective_due_date",
             "is_completed",
+            "status",
+            "is_required",
             "parent",
             "is_group",
             "group_type",
@@ -88,7 +102,10 @@ class TaskCreateUpdateSerializer(serializers.ModelSerializer):
             "title",
             "description",
             "due_date",
+            "recommended_datetime",
             "is_completed",
+            "status",
+            "is_required",
             "parent",
             "is_group",
             "group_type",
@@ -117,6 +134,14 @@ class TaskCreateUpdateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"parent": "親タスクはグループタスクである必要があります。"}
             )
+            
+        due_date = data.get("due_date", getattr(self.instance, "due_date", None))
+        rec_date = data.get("recommended_datetime", getattr(self.instance, "recommended_datetime", None))
+        if due_date and rec_date and rec_date > due_date:
+            raise serializers.ValidationError(
+                {"recommended_datetime": "推奨実行日時は期限より前である必要があります。"}
+            )
+
         return data
 
 

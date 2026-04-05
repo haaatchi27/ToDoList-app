@@ -1,6 +1,25 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    theme = models.CharField("テーマ", max_length=50, default='indigo')
+
+    def __str__(self):
+        return f"{self.user.username} Profile"
+
+@receiver(post_save, sender=User)
+def create_or_save_user_profile(sender, instance, created, **kwargs):
+    if created:
+        UserProfile.objects.create(user=instance)
+    else:
+        if not hasattr(instance, 'profile'):
+            UserProfile.objects.create(user=instance)
+        instance.profile.save()
 
 
 class Task(models.Model):
@@ -26,8 +45,15 @@ class Task(models.Model):
     description = models.TextField("説明", blank=True, default="")
     memo = models.TextField("メモ", blank=True, default="")
     due_date = models.DateTimeField("期限", null=True, blank=True)
-    is_completed = models.BooleanField("完了", default=False)
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "未実行"
+        COMPLETED = "COMPLETED", "完了"
+        NOT_REQUIRED = "NOT_REQUIRED", "実施不要"
+        FAILED = "FAILED", "失敗（期限超過による消滅）"
 
+    is_completed = models.BooleanField("完了", default=False)
+    is_required = models.BooleanField("必須", default=True)
+    recommended_datetime = models.DateTimeField("推奨実行日時", null=True, blank=True)
     # Hierarchy
     parent = models.ForeignKey(
         "self",
@@ -74,6 +100,17 @@ class Task(models.Model):
         prefix = "[Group] " if self.is_group else ""
         return f"{prefix}{self.title}"
 
+    @property
+    def status(self):
+        if self.is_completed:
+            return self.Status.COMPLETED
+        if self.due_date:
+            from django.utils import timezone
+            if self.due_date < timezone.now():
+                if not self.is_required:
+                    return self.Status.FAILED
+        return self.Status.PENDING
+
     def save(self, *args, **kwargs):
         # 「順位なし」または種別未設定の場合は、優先度を最大値(INT_MAX)に固定
         if self.group_type == self.GroupType.UNRANKED or self.group_type is None:
@@ -89,8 +126,8 @@ class Task(models.Model):
         For single tasks: returns its own due_date (only if uncompleted).
         """
         if not self.is_group:
-            # Completed tasks don't contribute to deadlines
-            if self.is_completed:
+            # Completed or terminal tasks don't contribute to deadlines
+            if self.status in [self.Status.COMPLETED, self.Status.NOT_REQUIRED, self.Status.FAILED]:
                 return None
             return self.due_date
         return self._get_earliest_due_date()
@@ -123,7 +160,7 @@ class Task(models.Model):
     def completion_ratio(self):
         """For groups, returns (completed_count, total_count) of leaf tasks."""
         if not self.is_group:
-            return (1 if self.is_completed else 0, 1)
+            return (1 if self.status == self.Status.COMPLETED else 0, 1)
 
         completed = 0
         total = 0

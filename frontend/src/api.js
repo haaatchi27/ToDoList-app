@@ -12,6 +12,12 @@ async function request(url, options = {}) {
         headers,
     });
     if (!res.ok) {
+        if (res.status === 401) {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/login';
+            return;
+        }
         const err = await res.json().catch(() => ({}));
         throw new Error(err.detail || res.statusText);
     }
@@ -57,4 +63,7 @@ export const api = {
             body: JSON.stringify({ sort_by: sortBy }),
         }),
     getProfile: () => request('/me/'),
+    updateProfile: (data) => request('/me/', { method: 'PATCH', body: JSON.stringify(data) }),
+    getDailySummary: () => request('/tasks/daily_summary/'),
+    getFlatTasks: (sortBy) => request(`/tasks/flat_sorted/?sort_by=${sortBy}`),
 };

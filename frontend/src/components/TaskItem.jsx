@@ -5,17 +5,21 @@ import MemoModal from './MemoModal';
  * Recursive TaskItem component for rendering hierarchical tasks.
  * Supports groups, ordering (drag & drop), expand/collapse, and inline child creation.
  */
-export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReorder, onUpdate, depth = 0, parentGroupType = null }) {
+export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReorder, onUpdate, depth = 0, parentGroupType = null, showCompleted = true, showFailed = false, parentRef = null }) {
     const [expanded, setExpanded] = useState(true);
     const [showAddChild, setShowAddChild] = useState(false);
     const [childTitle, setChildTitle] = useState('');
     const [childDueDate, setChildDueDate] = useState('');
+    const [childRecommendedDate, setChildRecommendedDate] = useState('');
+    const [childIsRequired, setChildIsRequired] = useState(true);
     const [childPriority, setChildPriority] = useState(99);
     const [childIsGroup, setChildIsGroup] = useState(false);
     const [childGroupType, setChildGroupType] = useState('UNRANKED');
     const [isEditing, setIsEditing] = useState(false);
     const [editTitle, setEditTitle] = useState(task.title);
     const [editDueDate, setEditDueDate] = useState('');
+    const [editRecommendedDate, setEditRecommendedDate] = useState('');
+    const [editIsRequired, setEditIsRequired] = useState(task.is_required ?? true);
     const [editPriority, setEditPriority] = useState(task.priority || 99);
     const [editGroupType, setEditGroupType] = useState(task.group_type || 'UNRANKED');
     const [isMemoOpen, setIsMemoOpen] = useState(false);
@@ -30,6 +34,24 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
     const progressPercent = task.completion_total > 0
         ? Math.round((task.completion_completed / task.completion_total) * 100)
         : 0;
+
+    if (!showCompleted && task.status === 'COMPLETED') {
+        return null;
+    }
+    if (!showFailed && task.status === 'FAILED') {
+        return null;
+    }
+
+    const handleDateFocus = (setter, currentValue) => {
+        if (!currentValue) {
+            const d = new Date();
+            d.setDate(d.getDate() + 1);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            setter(`${year}-${month}-${day}T00:00`);
+        }
+    };
 
     const formatDate = (dateStr) => {
         if (!dateStr) return null;
@@ -50,16 +72,24 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
 
     const handleAddChild = () => {
         if (!childTitle.trim()) return;
+        if (childDueDate && childRecommendedDate && new Date(childRecommendedDate) > new Date(childDueDate)) {
+            alert("推奨実行日時は期限より前である必要があります。");
+            return;
+        }
         onAddChild(task.id, {
             title: childTitle.trim(),
             parent: task.id,
             due_date: childDueDate || null,
+            recommended_datetime: childRecommendedDate || null,
+            is_required: childIsRequired,
             priority: parseInt(childPriority) || 99,
             is_group: childIsGroup,
             group_type: childGroupType,
         });
         setChildTitle('');
         setChildDueDate('');
+        setChildRecommendedDate('');
+        setChildIsRequired(true);
         setChildPriority(99);
         setChildIsGroup(false);
         setChildGroupType('UNRANKED');
@@ -78,12 +108,19 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         e.stopPropagation();
         setEditTitle(task.title);
         setEditDueDate(toLocalDateTimeString(task.due_date));
+        setEditRecommendedDate(toLocalDateTimeString(task.recommended_datetime));
+        setEditIsRequired(task.is_required ?? true);
         setEditPriority(task.priority || 99);
         setEditGroupType(task.group_type || 'UNRANKED');
         setIsEditing(true);
     };
 
     const handleEditSave = () => {
+        if (editDueDate && editRecommendedDate && new Date(editRecommendedDate) > new Date(editDueDate)) {
+            alert("推奨実行日時は期限より前である必要があります。");
+            return;
+        }
+
         const updates = {};
         if (editTitle.trim() && editTitle !== task.title) {
             updates.title = editTitle.trim();
@@ -93,6 +130,15 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         if (editDueDate !== oldDueDate) {
             updates.due_date = newDueDate;
         }
+        const newRecDate = editRecommendedDate || null;
+        const oldRecDate = task.recommended_datetime ? toLocalDateTimeString(task.recommended_datetime) : '';
+        if (editRecommendedDate !== oldRecDate) {
+            updates.recommended_datetime = newRecDate;
+        }
+        if (editIsRequired !== (task.is_required ?? true)) {
+            updates.is_required = editIsRequired;
+        }
+
         if (parseInt(editPriority) !== (task.priority || 99)) {
             updates.priority = parseInt(editPriority) || 99;
         }
@@ -124,8 +170,12 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
     const handleDragStart = (e) => {
         e.stopPropagation();
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('application/task-id', String(task.id));
-        e.dataTransfer.setData('application/task-parent', task.parent == null ? '__top__' : String(task.parent));
+
+        const payload = JSON.stringify({
+            id: task.id,
+            parent: task.parent == null ? '__top__' : String(task.parent)
+        });
+        e.dataTransfer.setData('text/plain', payload);
         setIsDragging(true);
     };
     const handleDragEnd = (e) => {
@@ -147,13 +197,21 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         e.stopPropagation();
         setIsDragOver(false);
 
-        const draggedId = parseInt(e.dataTransfer.getData('application/task-id'));
-        const draggedParent = e.dataTransfer.getData('application/task-parent');
-        const myParent = task.parent == null ? '__top__' : String(task.parent);
+        try {
+            const rawData = e.dataTransfer.getData('text/plain');
+            if (!rawData) return;
+            const data = JSON.parse(rawData);
 
-        // Only allow reorder between siblings (same parent)
-        if (draggedId !== task.id && draggedParent === myParent) {
-            onReorder(task.parent, draggedId, task.id);
+            const draggedId = parseInt(data.id);
+            const draggedParent = data.parent;
+            const myParent = task.parent == null ? '__top__' : String(task.parent);
+
+            // Only allow reorder between siblings (same parent)
+            if (draggedId !== task.id && draggedParent === myParent) {
+                onReorder(task.parent, draggedId, task.id);
+            }
+        } catch (err) {
+            console.error("Drag payload parsing failed:", err);
         }
     };
 
@@ -164,9 +222,6 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
         <div
             ref={dragRef}
             className={`task-item ${isDragging ? 'dragging' : ''} ${isDragOver ? 'drag-over' : ''}`}
-            draggable={task.group_type !== 'RANKED'}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -175,22 +230,45 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
             <div className="task-item-header">
                 {/* Drag handle - only show if manual reordering is allowed (UNRANKED item) */}
                 {task.group_type !== 'RANKED' && (
-                    <span className="drag-handle" title="ドラッグで並べ替え">⠿</span>
+                    <span
+                        className="drag-handle"
+                        title="ドラッグで並べ替え"
+                        draggable
+                        onDragStart={handleDragStart}
+                        onDragEnd={handleDragEnd}
+                    >⠿</span>
                 )}
 
                 {/* Group expand / Single checkbox */}
                 {isGroup ? (
                     <span
                         className={`task-expand ${expanded ? 'expanded' : ''}`}
-                        onClick={() => setExpanded(!expanded)}
+                        onClick={() => {
+                            const willExpand = !expanded;
+                            setExpanded(willExpand);
+                            setTimeout(() => {
+                                if (willExpand) {
+                                    // Expanding: scroll this directory to top
+                                    dragRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                } else {
+                                    // Collapsing: scroll parent directory to top (or self if top-level)
+                                    const target = parentRef?.current || dragRef.current;
+                                    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                            }, 50);
+                        }}
                     >
                         ▶
                     </span>
                 ) : (
                     <span
-                        className={`task-checkbox ${task.is_completed ? 'checked' : ''}`}
+                        className={`task-checkbox ${task.status === 'COMPLETED' ? 'checked' : ''}`}
                         onClick={() => onToggle(task.id)}
-                    />
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    >
+                        {task.status === 'FAILED' && <span style={{ color: 'red', fontSize: '0.7rem' }}>✖</span>}
+                        {task.status === 'NOT_REQUIRED' && <span style={{ color: 'orange', fontSize: '0.7rem' }}>➖</span>}
+                    </span>
                 )}
 
                 {/* Task info */}
@@ -208,14 +286,40 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                             {/* 優先度付きタスク（編集画面） */}
                             {!isGroup && (
                                 <div className="due-date-edit-container">
-                                    <input
-                                        type="datetime-local"
-                                        className="form-input form-input-due"
-                                        value={editDueDate}
-                                        onChange={(e) => setEditDueDate(e.target.value)}
-                                    />
+                                    <label className="form-label-inline">
+                                        <span>📅 期限:</span>
+                                        <input
+                                            type="datetime-local"
+                                            className="form-input form-input-sm"
+                                            value={editDueDate}
+                                            onChange={(e) => setEditDueDate(e.target.value)}
+                                            onFocus={() => handleDateFocus(setEditDueDate, editDueDate)}
+                                            onClick={() => handleDateFocus(setEditDueDate, editDueDate)}
+                                            title="期限"
+                                        />
+                                    </label>
+                                    <label className="form-label-inline ml-xs">
+                                        <span>⭐ 推奨:</span>
+                                        <input
+                                            type="datetime-local"
+                                            className="form-input form-input-sm"
+                                            value={editRecommendedDate}
+                                            onChange={(e) => setEditRecommendedDate(e.target.value)}
+                                            onFocus={() => handleDateFocus(setEditRecommendedDate, editRecommendedDate)}
+                                            onClick={() => handleDateFocus(setEditRecommendedDate, editRecommendedDate)}
+                                            title="推奨実行日時"
+                                        />
+                                    </label>
+                                    <label className="form-checkbox-label ml-xs" title="必須タスク">
+                                        <input
+                                            type="checkbox"
+                                            checked={editIsRequired}
+                                            onChange={(e) => setEditIsRequired(e.target.checked)}
+                                        />
+                                        必須
+                                    </label>
                                     <button
-                                        className="btn btn-icon btn-ghost btn-xs"
+                                        className="btn btn-icon btn-ghost btn-xs ml-xs"
                                         onClick={handleDueDateClear}
                                         title="期限をクリア"
                                     >
@@ -273,9 +377,9 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                         </div>
                     ) : (
                         <div
-                            className={`task-title ${task.is_completed ? 'completed' : ''}`}
+                            className={`task-title ${task.status === 'COMPLETED' ? 'completed' : ''} ${['FAILED', 'NOT_REQUIRED'].includes(task.status) ? 'inactive' : ''}`}
                             onClick={(e) => { e.stopPropagation(); setIsMemoOpen(true); }}
-                            style={{ cursor: 'pointer' }}
+                            style={{ cursor: 'pointer', opacity: ['FAILED', 'NOT_REQUIRED'].includes(task.status) ? 0.6 : 1 }}
                             title="クリックでメモを表示"
                         >
                             {task.title}
@@ -317,7 +421,27 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                         {/* 基本タスク */}
                         {!isEditing && displayDue && (
                             <span className={`task-due ${dueStatus}`}>
-                                📅 {formatDate(displayDue)}
+                                📅 期限: {formatDate(displayDue)}
+                            </span>
+                        )}
+                        {!isEditing && task.recommended_datetime && (
+                            <span className="task-due">
+                                ⭐ 推奨: {formatDate(task.recommended_datetime)}
+                            </span>
+                        )}
+                        {!isEditing && !task.is_required && (
+                            <span className="task-badge task-badge-group">
+                                任意
+                            </span>
+                        )}
+                        {!isEditing && task.status === 'FAILED' && (
+                            <span className="task-badge" style={{ background: 'var(--color-danger)', color: '#fff' }}>
+                                失敗（期限超過）
+                            </span>
+                        )}
+                        {!isEditing && task.status === 'NOT_REQUIRED' && (
+                            <span className="task-badge" style={{ background: 'var(--color-text-light)', color: '#fff' }}>
+                                実施不要
                             </span>
                         )}
                         {/* 順位付きを非表示 */}
@@ -404,12 +528,38 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                             onKeyDown={(e) => e.key === 'Enter' && handleAddChild()}
                             autoFocus
                         />
-                        <input
-                            type="datetime-local"
-                            className="form-input form-input-sm"
-                            value={childDueDate}
-                            onChange={(e) => setChildDueDate(e.target.value)}
-                        />
+                        <label className="form-label-inline ml-xs">
+                            <span>📅 期限:</span>
+                            <input
+                                type="datetime-local"
+                                className="form-input form-input-sm"
+                                value={childDueDate}
+                                onChange={(e) => setChildDueDate(e.target.value)}
+                                onFocus={() => handleDateFocus(setChildDueDate, childDueDate)}
+                                onClick={() => handleDateFocus(setChildDueDate, childDueDate)}
+                                title="期限"
+                            />
+                        </label>
+                        <label className="form-label-inline ml-xs">
+                            <span>⭐ 推奨:</span>
+                            <input
+                                type="datetime-local"
+                                className="form-input form-input-sm"
+                                value={childRecommendedDate}
+                                onChange={(e) => setChildRecommendedDate(e.target.value)}
+                                onFocus={() => handleDateFocus(setChildRecommendedDate, childRecommendedDate)}
+                                onClick={() => handleDateFocus(setChildRecommendedDate, childRecommendedDate)}
+                                title="推奨実行日時"
+                            />
+                        </label>
+                        <label className="form-checkbox-label ml-xs" title="必須タスク">
+                            <input
+                                type="checkbox"
+                                checked={childIsRequired}
+                                onChange={(e) => setChildIsRequired(e.target.checked)}
+                            />
+                            必須
+                        </label>
 
                         <label className="form-checkbox-label">
                             <input
@@ -456,6 +606,9 @@ export default function TaskItem({ task, onToggle, onDelete, onAddChild, onReord
                             onUpdate={onUpdate}
                             depth={depth + 1}
                             parentGroupType={task.group_type}
+                            showCompleted={showCompleted}
+                            showFailed={showFailed}
+                            parentRef={dragRef}
                         />
                     ))}
                 </div>

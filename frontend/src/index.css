@@ -298,7 +298,7 @@ body::before {
 
 /* ===== Layout ===== */
 .app-container {
-  max-width: 800px;
+  /* max-width: 800px; */
   margin: 0 auto;
   padding: var(--space-lg) var(--space-md);
   min-height: 100vh;
@@ -350,12 +350,22 @@ body::before {
 
 .form-row {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: var(--space-sm);
   margin-bottom: var(--space-sm);
 }
 
 .form-row:last-child {
   margin-bottom: 0;
+}
+
+.add-child-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) 0;
 }
 
 .form-input {
@@ -381,8 +391,8 @@ body::before {
 }
 
 .form-input-sm {
-  flex: 0 0 auto;
-  width: 200px;
+  flex: 1 1 200px;
+  min-width: 150px;
 }
 
 .form-select {
@@ -410,12 +420,22 @@ body::before {
   font-size: 0.85rem;
   cursor: pointer;
   user-select: none;
+  white-space: nowrap;
 }
 
 .form-checkbox-label input[type="checkbox"] {
   accent-color: var(--accent-primary);
   width: 16px;
   height: 16px;
+}
+
+.form-label-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
 }
 
 /* ===== Buttons ===== */
@@ -439,6 +459,8 @@ body::before {
   background: var(--accent-gradient);
   color: white;
   box-shadow: var(--accent-glow);
+  margin: 5px;
+
 }
 
 .btn-primary:hover {
@@ -503,6 +525,16 @@ body::before {
   border-radius: var(--radius-md);
   transition: all var(--transition-normal);
   animation: taskSlideIn 0.35s var(--transition-slow) both;
+}
+
+.task-item[draggable="true"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.drag-handle {
+  touch-action: none;
 }
 
 @keyframes taskSlideIn {
